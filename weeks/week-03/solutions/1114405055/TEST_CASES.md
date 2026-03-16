@@ -117,3 +117,15 @@ a
 id
 ,."
 ```
+
+## Robot Game Unit Tests (UVA 118 Core)
+
+- 測試檔：
+	- tests/test_robot_core.py
+	- tests/test_robot_scent.py
+- 覆蓋重點：
+	- 方向旋轉（L/R）
+	- 前進與邊界判定（MOVE/LOST）
+	- LOST 後命令忽略（NOOP_LOST）
+	- scent 保護（SCENT_BLOCK）
+	- scent 方向敏感性（同座標不同方向）

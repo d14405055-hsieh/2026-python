@@ -132,3 +132,24 @@ RL
 LL
 DO
 ```
+
+## Run 2
+
+- 目的：補齊實體單元測試證據（robot_core 與 scent 機制）。
+- 測試檔：
+	- tests/test_robot_core.py
+	- tests/test_robot_scent.py
+- 結果：全部通過（8/8）。
+
+指令：
+
+```powershell
+c:/Users/Han/Desktop/py/2026-python-1/.venv/Scripts/python.exe -m pytest -q tests/test_robot_core.py tests/test_robot_scent.py
+```
+
+輸出：
+
+```text
+........                                                                 [100%]
+8 passed in 0.07s
+```
