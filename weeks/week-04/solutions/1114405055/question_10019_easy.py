@@ -1,5 +1,3 @@
-"""UVA 10019 簡單版：用 while 迴圈計算 bit 數。"""
-
 import sys
 
 
