@@ -1,0 +1,10 @@
+蜀 劉備 110 20 16 72 True command
+蜀 關羽 120 30 15 84 False slash
+蜀 趙雲 115 27 14 88 False spear
+吳 孫權 105 19 16 74 True command
+吳 周瑜 95 22 13 86 True fire
+吳 黃蓋 125 26 17 68 False smash
+魏 曹操 130 29 18 80 True command
+魏 夏侯惇 122 28 16 82 False slash
+魏 郭嘉 92 21 12 78 True strategy
+EOF
