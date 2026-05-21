@@ -1,0 +1,762 @@
+From 2eb349c91c3fee94a02048ccf676daee1be69a0f Mon Sep 17 00:00:00 2001
+From: "Hsieh, Yu Chi" <d14405055@ems.npu.edu.tw>
+Date: Thu, 21 May 2026 01:55:43 +0000
+Subject: [PATCH] docs(week-13): add detailed comments to solutions for
+ 1114405055
+
+---
+ .../solutions/1114405055/A01-partial.py       |  96 +++++++++++++++
+ .../1114405055/A02-context-manager.py         | 112 ++++++++++++++++++
+ .../1114405055/R01-function-signatures.py     |  66 +++++++++++
+ .../1114405055/R02-special-methods.py         | 110 +++++++++++++++++
+ .../solutions/1114405055/R03-property.py      |  98 +++++++++++++++
+ .../1114405055/U01-closures-traps.py          | 100 ++++++++++++++++
+ .../1114405055/U02-classmethod-factory.py     | 112 ++++++++++++++++++
+ 7 files changed, 694 insertions(+)
+ create mode 100644 weeks/week-13/solutions/1114405055/A01-partial.py
+ create mode 100644 weeks/week-13/solutions/1114405055/A02-context-manager.py
+ create mode 100644 weeks/week-13/solutions/1114405055/R01-function-signatures.py
+ create mode 100644 weeks/week-13/solutions/1114405055/R02-special-methods.py
+ create mode 100644 weeks/week-13/solutions/1114405055/R03-property.py
+ create mode 100644 weeks/week-13/solutions/1114405055/U01-closures-traps.py
+ create mode 100644 weeks/week-13/solutions/1114405055/U02-classmethod-factory.py
+
+diff --git a/weeks/week-13/solutions/1114405055/A01-partial.py b/weeks/week-13/solutions/1114405055/A01-partial.py
+new file mode 100644
+index 0000000..d6a4775
+--- /dev/null
++++ b/weeks/week-13/solutions/1114405055/A01-partial.py
+@@ -0,0 +1,96 @@
++# A01. functools.partial：固定參數，減少重複
++# 當你一直用「幾乎相同」的參數呼叫同一個函數，partial 幫你省掉重複
++# 對應 Bloom's Taxonomy：應用（Apply）— 能把技巧套到新情境
++
++from functools import partial
++
++# ── 基本概念：固定部分參數，產生新函數 ───────────────────
++
++def power(base, exp):
++    # base ** exp 的簡單封裝；用來示範 partial 固定某些參數
++    return base ** exp
++
++# partial 的行為：回傳一個新的可呼叫物件（callable），
++# 這個物件會把我們傳給 partial 的位置參數與關鍵字參數
++# 與呼叫時傳入的參數合併後再呼叫原始函數。
++# newfunc.func, newfunc.args, newfunc.keywords 可以用來檢視內部綁定的內容。
++square = partial(power, exp=2)   # 固定 exp=2，只剩 base 要填
++cube   = partial(power, exp=3)   # 固定 exp=3
++
++print("=== partial 基本用法 ===")
++print(square(5))    # 25
++print(cube(3))      # 27
++print([square(n) for n in range(1, 6)])  # [1, 4, 9, 16, 25]
++
++# ── 搭配 sorted：固定排序的 key ──────────────────────────
++
++students = [
++    {"name": "王小明", "math": 80, "english": 70},
++    {"name": "李大華", "math": 65, "english": 90},
++    {"name": "張三",   "math": 95, "english": 55},
++]
++
++def get_score(student, subject):
++    # 根據 subject 取 student dict 的對應分數
++    return student[subject]
++
++by_math    = partial(get_score, subject="math")
++by_english = partial(get_score, subject="english")
++
++print("\n=== partial 搭配 sorted ===")
++print("數學排名：", [s["name"] for s in sorted(students, key=by_math,    reverse=True)])
++print("英文排名：", [s["name"] for s in sorted(students, key=by_english, reverse=True)])
++
++# ── CPE 應用：UVA 11005 進位制成本 ──────────────────────
++# 題目需要計算同一個數字在不同進位下的成本
++# 用 partial 固定「成本表」，讓程式碼更簡潔
++
++DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
++
++def cost_in_base(n, base, costs):
++    """計算 n 在 base 進位下每一位數字的成本總和"""
++    if n == 0:
++        return costs[0]
++    total = 0
++    while n > 0:
++        total += costs[n % base]
++        n //= base
++    return total
++
++# 假設每個字元成本都是 1（示範用）
++# 假設每個字元成本都是 1（示範用）
++uniform_costs = [1] * 36
++
++# 用 partial 固定 costs，之後只要填 (n, base)
++# 用 partial 固定 costs，之後只要填 (n, base)
++calc = partial(cost_in_base, costs=uniform_costs)
++
++print("\n=== UVA 11005：各進位下的成本 ===")
++n = 255
++best_cost = min(calc(n, b) for b in range(2, 37))
++best_bases = [b for b in range(2, 37) if calc(n, b) == best_cost]
++print(f"數字 {n}，最低成本 {best_cost}，最佳進位：{best_bases}")
++
++# ── 固定 print 的格式 ─────────────────────────────────────
++# 競程輸出時常用
++
++print_same_line = partial(print, end=" ")
++print("\n=== 同行輸出 ===")
++for i in range(1, 6):
++    print_same_line(i)
++print()   # 換行
++
++# ── partial vs lambda 比較 ────────────────────────────────
++# 兩種寫法效果一樣，partial 可讀性更高
++
++double_lambda  = lambda x: power(x, 2)        # lambda 寫法
++double_partial = partial(power, exp=2)         # partial 寫法
++
++print("\n=== lambda vs partial ===")
++print([double_lambda(n)  for n in range(1, 6)])   # [1, 4, 9, 16, 25]
++print([double_partial(n) for n in range(1, 6)])   # [1, 4, 9, 16, 25]
++
++# 記憶重點 ──────────────────────────────────────────────────
++# partial(函數, 固定的參數) → 回傳新函數，只剩剩餘的參數要填
++# 常用場景：sorted key、min/max key、print 格式、重複呼叫某個函數
++# 和 lambda 效果類似，但 partial 更清楚表達「固定哪個參數」
+diff --git a/weeks/week-13/solutions/1114405055/A02-context-manager.py b/weeks/week-13/solutions/1114405055/A02-context-manager.py
+new file mode 100644
+index 0000000..d24b975
+--- /dev/null
++++ b/weeks/week-13/solutions/1114405055/A02-context-manager.py
+@@ -0,0 +1,112 @@
++# A02. with 語句與 Context Manager
++# 「借東西要還」——確保資源一定會被釋放，就算程式出錯也一樣
++# 對應 Bloom's Taxonomy：應用（Apply）— 能設計並使用自訂的 with 區塊
++
++# ── 為什麼需要 with？ ─────────────────────────────────────
++# 沒有 with 的開檔方式：如果中途發生例外，close() 可能永遠不會被呼叫
++
++# 不好的寫法
++# f = open("demo.txt", "w")
++# f.write("hello")
++# f.close()   # 如果 write 出錯，這行就不會執行了
++
++# 正確的寫法：with 會自動呼叫 close()，即使出錯也一樣
++print("=== with 開檔：自動關閉 ===")
++with open("/tmp/week13_demo.txt", "w") as f:
++    f.write("Hello from Week 13\n")
++
++with open("/tmp/week13_demo.txt", "r") as f:
++    print(f.read().strip())
++
++# ── 自己寫 Context Manager（用 class）────────────────────
++# 需要實作兩個方法：
++#   __enter__：進入 with 區塊時執行，回傳值會被 as 接收
++#   __exit__ ：離開 with 區塊時執行（不管有沒有出錯）
++
++import time
++
++class Timer:
++    """計時器：進入 with 時開始，離開時印出經過時間"""
++
++    def __enter__(self):
++        self.start = time.time()
++        print("⏱  開始計時")
++        return self   # 這個值會被 as 接收，例如 as t
++
++    def __exit__(self, exc_type, exc_val, exc_tb):
++        # __exit__ 會收到三個參數：例外類型、例外值、與 traceback
++        # 如果 with 內沒有發生例外，這三個參數都是 None。
++        # 回傳 True 會告訴 Python「這個例外已被處理」，例外不會再被往外拋。
++        # 回傳 False（或 None）表示不處理例外，例外會如常被拋出。
++        elapsed = time.time() - self.start
++        print(f"⏱  結束：{elapsed:.4f} 秒")
++        return False  # False = 不吃掉例外（讓錯誤繼續往外傳）
++
++print("\n=== 自訂計時器 ===")
++with Timer() as t:
++    total = sum(range(1_000_000))
++print(f"計算結果：{total}")
++
++# ── 更簡單的寫法：@contextmanager ─────────────────────────
++# 不用寫 class，用 yield 分隔「進入前」和「離開後」
++
++from contextlib import contextmanager
++
++@contextmanager
++def section(title):
++    """印出有邊框的區段標題"""
++    print(f"\n{'='*40}")
++    print(f"  {title}")
++    print(f"{'='*40}")
++    # yield 之前的程式會在 __enter__ 階段執行，yield 之後的程式
++    # 等同於 __exit__ 區塊，因此可以在 yield 後放清理程式（例如關檔、還原狀態）
++    yield           # ← with 區塊的程式碼在這裡執行
++    print(f"{'─'*40}")
++
++print()
++with section("Week 13 CPE 模擬考"):
++    print("  題目：UVA 11005 Cheapest Base")
++    print("  時間限制：20 分鐘")
++
++# ── CPE 應用：截取 stdout，方便測試輸出 ─────────────────
++# 有些 CPE 題目會直接 print 答案
++# 測試時可以截取 print 的輸出來比對
++
++import io, sys
++
++@contextmanager
++def capture_output():
++    """暫時把 print 的輸出截取到字串裡"""
++    old_stdout = sys.stdout
++    sys.stdout = buffer = io.StringIO()
++    try:
++        yield buffer     # with ... as buf 的 buf 就是這個 buffer
++    finally:
++        # 不論 with 內是否發生例外，finally 區塊都會被執行，
++        # 因此這裡用 finally 確保 stdout 一定會被還原，避免破壞後續輸出行為。
++        sys.stdout = old_stdout   # 一定要還原，finally 保證執行
++
++def solve_parity(n):
++    """UVA 10931 Parity：計算 n 的二進位裡有幾個 1"""
++    bits = bin(n)[2:]
++    ones = bits.count('1')
++    print(f"The parity of {bits} is {ones} (mod 2 is {ones % 2}).")
++
++print("\n=== 截取輸出（測試用）===")
++with capture_output() as out:
++    solve_parity(10)
++    solve_parity(7)
++
++captured = out.getvalue()
++print("截取到的輸出：")
++print(captured)
++
++# 可以直接拿來做 assertEqual
++lines = captured.strip().split('\n')
++print(f"共 {len(lines)} 行輸出")
++
++# 記憶重點 ──────────────────────────────────────────────────
++# __enter__ → 進入 with 時執行，回傳值被 as 接收
++# __exit__  → 離開 with 時執行（出錯也會執行）
++# @contextmanager + yield → 更簡單的寫法，yield 前是 enter，yield 後是 exit
++# 常用場景：開檔、計時、測試輸出截取、任何「借了要還」的資源
+diff --git a/weeks/week-13/solutions/1114405055/R01-function-signatures.py b/weeks/week-13/solutions/1114405055/R01-function-signatures.py
+new file mode 100644
+index 0000000..65f1622
+--- /dev/null
++++ b/weeks/week-13/solutions/1114405055/R01-function-signatures.py
+@@ -0,0 +1,66 @@
++# R01. 函數彈性簽章
++# 讓函數可以接受「不固定數量」的參數
++# 對應 Bloom's Taxonomy：記憶（Remember）— 背得出語法
++
++# ── *args：不定個數的位置參數 ─────────────────────────────
++# 問題：想加總任意幾個數字，不知道會有幾個
++
++def add_all(*args):
++    """args 在函數內是一個 tuple
++
++    範例：add_all(1,2,3) -> args == (1,2,3)
++    可以搭配參數解包使用：nums = [1,2,3]; add_all(*nums)
++    """
++    return sum(args)
++
++print("=== *args：不定個數的位置參數 ===")
++print(add_all(1, 2))            # 3
++print(add_all(1, 2, 3, 4, 5))  # 15
++print(add_all())                # 0（空的也沒問題）
++
++# ── **kwargs：不定個數的關鍵字參數 ───────────────────────
++# kwargs 在函數內是一個 dict
++
++def make_student(**kwargs):
++    """建立學生資料，欄位可以自由指定
++
++    kwargs 在函數內是一個 dict，常見用法是把多個可選欄位收集起來。
++    也可用於把 dict 解包成關鍵字參數：d = {'a':1}; f(**d)
++    """
++    return kwargs
++
++print("\n=== **kwargs：不定個數的關鍵字參數 ===")
++s = make_student(name="王小明", grade=85, seat=12)
++print(s)   # {'name': '王小明', 'grade': 85, 'seat': 12}
++
++# ── keyword-only：強制用名稱呼叫 ─────────────────────────
++# * 後面的參數「一定要具名」，避免填錯順序
++
++def send_score(student_id, *, subject, score):
++    """宣告 keyword-only 參數：呼叫時必須使用參數名稱。
++
++    這樣可以避免不小心把 subject 與 score 的位置搞混；
++    若要在簽章中插入可變位置參數，*args 必須放在 keyword-only 之前。
++    """
++    print(f"學號 {student_id}｜{subject}：{score} 分")
++
++print("\n=== keyword-only：強制具名，避免填錯順序 ===")
++send_score("411234001", subject="數學", score=90)   # 正確
++# send_score("411234001", "數學", 90)  # ← 這樣會 TypeError！
++
++# ── 三種參數混合使用 ──────────────────────────────────────
++def report(title, *scores, prefix="成績"):
++    """title 普通參數，scores 不定個數，prefix 有預設值"""
++    # scores 是 tuple；為了安全計算平均值，若沒有分數要避免除以零
++    avg = sum(scores) / len(scores) if scores else 0
++    print(f"{prefix}報告－{title}：平均 {avg:.1f}")
++
++print("\n=== 混合：普通 + *args + 預設值 ===")
++report("期中考", 80, 90, 70)
++report("期末考", 95, 85, 75, 100, prefix="最終")
++
++# ── 記憶重點 ──────────────────────────────────────────────
++# *args   → tuple，接受任意個「值」
++# **kwargs → dict，接受任意個「名稱=值」
++# *（單獨）→ 後面的參數一定要具名
++# 順序：普通參數 → *args → keyword-only → **kwargs
+diff --git a/weeks/week-13/solutions/1114405055/R02-special-methods.py b/weeks/week-13/solutions/1114405055/R02-special-methods.py
+new file mode 100644
+index 0000000..447e1bb
+--- /dev/null
++++ b/weeks/week-13/solutions/1114405055/R02-special-methods.py
+@@ -0,0 +1,110 @@
++# R02. 物件特殊方法
++# 讓自訂的 class 表現得像 Python 內建型別
++# 對應 Bloom's Taxonomy：記憶（Remember）— 背得出哪個場景用哪個方法
++
++# ── __repr__ 和 __str__：物件的自我介紹 ──────────────────
++# __repr__：給「開發者」看的（在 REPL、debug 時出現）
++# __str__ ：給「使用者」看的（print() 優先用這個）
++
++class Student:
++    def __init__(self, name, grade):
++        self.name = name
++        self.grade = grade
++
++    def __repr__(self):
++        # __repr__ 應回傳可以讓開發者理解或重建物件的字串，常用 !r 取得欄位的 repr
++        return f"Student(name={self.name!r}, grade={self.grade})"
++
++    def __str__(self):
++        return f"{self.name}：{self.grade} 分"
++
++print("=== __repr__ vs __str__ ===")
++s = Student("王小明", 85)
++print(repr(s))   # Student(name='王小明', grade=85)
++print(str(s))    # 王小明：85 分
++print(s)         # 王小明：85 分（print 優先用 __str__）
++
++# ── __eq__：自訂「相等」的意義 ────────────────────────────
++# 沒有 __eq__ 的話，兩個物件只有「同一個記憶體位置」才算相等
++
++class Point:
++    def __init__(self, x, y):
++        self.x = x
++        self.y = y
++
++    def __repr__(self):
++        return f"Point({self.x}, {self.y})"
++
++    def __eq__(self, other):
++        # 若 other 不是同類型，回傳 NotImplemented 讓 Python 嘗試反向比較
++        #（例如 other.__eq__(self)），或返回 False。直接回傳 False 會
++        # 阻止反向比較的機會，使用 NotImplemented 是較禮貌的做法。
++        if not isinstance(other, Point):
++            return NotImplemented
++        return self.x == other.x and self.y == other.y
++
++print("\n=== __eq__：自訂相等條件 ===")
++p1 = Point(1, 2)
++p2 = Point(1, 2)
++p3 = Point(3, 4)
++print(p1 == p2)  # True（座標相同）
++print(p1 == p3)  # False
++print(p1 is p2)  # False（是不同的物件，記憶體位置不同）
++
++# ── @total_ordering：自動補齊所有比較運算子 ─────────────
++# 只要定義 __eq__ 和一個比較（__lt__），
++# @total_ordering 會自動補出 <=, >, >= 四個
++
++from functools import total_ordering
++
++@total_ordering
++class Score:
++    def __init__(self, value):
++        self.value = value
++
++    def __repr__(self):
++        return f"Score({self.value})"
++
++    def __eq__(self, other):
++        # 假設 other 也是 Score；若不是，會產生 AttributeError，
++        # 在實務上可以先檢查類型或處理 NotImplemented。
++        return self.value == other.value
++
++    def __lt__(self, other):
++        return self.value < other.value
++
++print("\n=== @total_ordering：只寫兩個，自動補齊全部 ===")
++a = Score(80)
++b = Score(90)
++print(a < b)   # True
++print(a > b)   # False（自動生成）
++print(a <= b)  # True（自動生成）
++
++scores = [Score(70), Score(95), Score(60)]
++print(sorted(scores))  # [Score(60), Score(70), Score(95)]
++
++# ── __slots__：大量物件時節省記憶體 ──────────────────────
++# 一般 class 每個物件都有一個 __dict__，很耗記憶體
++# CPE 題目有時會建立幾十萬個小物件，__slots__ 可以大幅節省
++
++class PointLite:
++    __slots__ = ('x', 'y')   # 固定只有這兩個屬性
++
++    def __init__(self, x, y):
++        self.x = x
++        self.y = y
++
++# 注意：使用 __slots__ 的類別無 __dict__，無法動態新增屬性；
++# 在多重繼承情況下要小心，若子類想要有額外屬性，必須在子類也定義 __slots__。
++
++print("\n=== __slots__：固定屬性，節省記憶體 ===")
++p = PointLite(3, 4)
++print(p.x, p.y)   # 3 4
++# p.z = 5  # 這行會 AttributeError，因為 z 不在 __slots__ 裡
++
++# 記憶重點 ──────────────────────────────────────────────────
++# __repr__  → 開發者用，要能「重現」物件
++# __str__   → 使用者用，print() 呼叫
++# __eq__    → 自訂 == 的意義
++# @total_ordering + __lt__ → 自動補齊 <, <=, >, >=
++# __slots__ → 固定屬性，大量物件時省記憶體
+diff --git a/weeks/week-13/solutions/1114405055/R03-property.py b/weeks/week-13/solutions/1114405055/R03-property.py
+new file mode 100644
+index 0000000..e3c9925
+--- /dev/null
++++ b/weeks/week-13/solutions/1114405055/R03-property.py
+@@ -0,0 +1,98 @@
++# R03. @property：屬性的守門員
++# 讓 class 的屬性在「讀取」或「設定」時可以加入驗證邏輯
++# 對應 Bloom's Taxonomy：記憶（Remember）— 背得出語法與使用時機
++
++# ── 沒有保護的屬性會怎樣？ ───────────────────────────────
++
++class BadStudent:
++    def __init__(self, name, grade):
++        self.name = name
++        self.grade = grade   # 任何值都能塞進去
++
++s = BadStudent("王小明", 85)
++s.grade = -100   # 竟然可以！成績不能是負數
++print(f"糟糕：{s.name} 的成績是 {s.grade}")  # -100
++
++# ── @property：在存取屬性時加上檢查 ─────────────────────
++
++class Student:
++    def __init__(self, name, grade):
++        self.name = name
++        self.grade = grade   # 這裡會自動呼叫下面的 setter
++
++    @property
++    def grade(self):
++        """getter：讀取 self.grade 時呼叫"""
++        # 注意：此處我們使用 _grade 作為實際儲存欄位，避免在 getter/setter
++        # 中直接使用 self.grade（會遞迴呼叫 getter/setter）。底線前綴是慣例，
++        # 表示「內部使用」。
++        return self._grade   # 實際資料存在 _grade（底線代表「內部用」）
++
++    @grade.setter
++    def grade(self, value):
++        """setter：執行 self.grade = xxx 時呼叫"""
++        if not (0 <= value <= 100):
++            raise ValueError(f"成績必須在 0～100，你給了 {value}")
++        self._grade = value
++
++print("\n=== @property 守門員 ===")
++s = Student("李大華", 90)
++print(s.grade)    # 90
++
++s.grade = 75      # 合法，通過檢查
++print(s.grade)    # 75
++
++try:
++    s.grade = -10  # 觸發 ValueError
++except ValueError as e:
++    print(f"錯誤：{e}")
++
++# ── 唯讀屬性：計算出來的值不需要存 ──────────────────────
++
++class Circle:
++    def __init__(self, radius):
++        self.radius = radius
++
++    @property
++    def area(self):
++        """面積是計算出來的，不該被直接設定"""
++        import math
++        return math.pi * self.radius ** 2
++
++    @property
++    def diameter(self):
++        return self.radius * 2
++
++print("\n=== 唯讀屬性（計算值）===")
++c = Circle(5)
++print(f"半徑 {c.radius}，直徑 {c.diameter:.1f}，面積 {c.area:.2f}")
++
++c.radius = 10
++print(f"半徑 {c.radius}，直徑 {c.diameter:.1f}，面積 {c.area:.2f}")
++
++# try:
++#     c.area = 100   # AttributeError：唯讀屬性不能設定
++
++# ── 子類覆寫 setter ───────────────────────────────────────
++# 研究生有加分機制，成績可以超過 100
++
++class GradStudent(Student):
++
++    @Student.grade.setter
++    def grade(self, value):
++        if not (0 <= value <= 150):
++            raise ValueError(f"研究生成績必須在 0～150，你給了 {value}")
++        self._grade = value
++
++# 補充：property 的 getter/setter 是屬性層級的行為，因此在子類以
++# @Student.grade.setter 的方式覆寫時，我們是針對父類的 property 做延伸。
++
++print("\n=== 子類覆寫 setter ===")
++g = GradStudent("張教授", 120)
++print(g.grade)   # 120（研究生可以超過 100）
++
++# 記憶重點 ──────────────────────────────────────────────────
++# @property           → getter，讀取時觸發
++# @屬性名.setter      → setter，設定時觸發（可加驗證）
++# 沒有 setter 的就是「唯讀屬性」
++# 實際資料習慣存在 _屬性名（底線開頭）
+diff --git a/weeks/week-13/solutions/1114405055/U01-closures-traps.py b/weeks/week-13/solutions/1114405055/U01-closures-traps.py
+new file mode 100644
+index 0000000..6194144
+--- /dev/null
++++ b/weeks/week-13/solutions/1114405055/U01-closures-traps.py
+@@ -0,0 +1,100 @@
++# U01. 陷阱！閉包與可變預設值
++# 兩個「寫起來看似正確，但結果出乎意料」的 Python 坑
++# 對應 Bloom's Taxonomy：理解（Understand）— 能解釋為什麼會出錯
++
++# ── 陷阱 1：可變的預設值 ─────────────────────────────────
++# 關鍵：函數的預設值只在「定義時」建立一次，之後每次呼叫都共用同一個物件
++
++def add_to_cart(item, cart=[]):   # ← 這個 [] 只建立一次！
++    cart.append(item)
++    return cart
++
++print("=== 陷阱 1：可變預設值 ===")
++print(add_to_cart("蘋果"))   # ['蘋果']
++print(add_to_cart("香蕉"))   # ['蘋果', '香蕉']  ← 驚！不是 ['香蕉']
++print(add_to_cart("葡萄"))   # ['蘋果', '香蕉', '葡萄']
++# 原因：cart=[] 這個 list 在 def 時就建好了，三次呼叫都用同一個
++
++print("\n--- 正確寫法：用 None 當預設值 ---")
++def add_to_cart_safe(item, cart=None):
++    if cart is None:
++        cart = []   # ← 每次呼叫才建立新的 list
++    cart.append(item)
++    return cart
++
++print(add_to_cart_safe("蘋果"))  # ['蘋果']
++print(add_to_cart_safe("香蕉"))  # ['香蕉'] ← 各自獨立，正確！
++
++# ── 陷阱 2：閉包的延遲綁定 ───────────────────────────────
++# 關鍵：閉包記住的是「變數名稱」，不是「當下的值」
++# 等迴圈跑完，i 已經是最後的值了
++
++print("\n=== 陷阱 2：閉包延遲綁定 ===")
++funcs = []
++for i in range(5):
++    # 這裡的 lambda 捕捉的是變數 i（名稱），而不是當下的數值；
++    # 當 lambda 被執行時才會去查 i 的值，此時迴圈已走完，i 等於最後一個值。
++    funcs.append(lambda: i)   # ← lambda 記住「i」這個名字，不是值
++
++print("你以為：", [0, 1, 2, 3, 4])
++print("實際上：", [f() for f in funcs])  # [4, 4, 4, 4, 4]，全部都是 4！
++# 原因：迴圈結束後 i=4，所有 lambda 去查 i，都查到 4
++
++print("\n--- 正確寫法：用預設參數把值「複製」進來 ---")
++funcs_ok = []
++for i in range(5):
++    # 把當下的 i 指派為 lambda 的預設參數 i=i，預設參數在定義時就會被求值，
++    # 因此每個 lambda 的預設 i 都保存了該次迴圈的值，執行時會使用該值。
++    funcs_ok.append(lambda i=i: i)   # ← i=i 把當下的值複製成預設值
++
++print("修正後：", [f() for f in funcs_ok])  # [0, 1, 2, 3, 4] ✓
++
++# ── nonlocal：在閉包裡修改外層的變數 ─────────────────────
++# 閉包預設只能「讀取」外層變數
++# 要修改外層變數，必須用 nonlocal 宣告
++
++print("\n=== nonlocal：修改外層變數 ===")
++
++def make_counter(start=0):
++    """回傳一個計數器函數，每次呼叫加 1"""
++    count = start
++
++    def counter():
++        # nonlocal 告訴 Python 在這個 scope 中的 count 指向外層函式的變數，
++        # 否則對 count 的賦值會建立一個新的區域變數，導致 UnboundLocalError。
++        nonlocal count   # ← 宣告「我要修改外層的 count，不是建新的」
++        count += 1
++        return count
++
++    return counter
++
++c1 = make_counter()
++c2 = make_counter(10)
++print(c1(), c1(), c1())   # 1 2 3
++print(c2(), c2())         # 11 12
++print(c1())               # 4（c1 和 c2 是各自獨立的計數器）
++
++# ── 實際應用：用閉包做「一次性」工具函數 ────────────────
++# CPE 中偶爾需要「記住狀態」但又不想寫整個 class
++
++print("\n=== 閉包應用：記住已走過的節點 ===")
++def make_visit_tracker():
++    visited = set()
++
++    def visit(node):
++        nonlocal visited
++        if node in visited:
++            return False    # 已走過
++        visited.add(node)
++        return True         # 第一次走到
++
++    return visit
++
++visit = make_visit_tracker()
++results = [visit(n) for n in [1, 2, 1, 3, 2, 4]]
++print(results)  # [True, True, False, True, False, True]
++
++# 記憶重點 ──────────────────────────────────────────────────
++# 可變預設值陷阱 → 預設值用 None，函數內再建 [] 或 {}
++# 閉包延遲綁定  → 用 lambda x=x: x 把值固定下來
++# nonlocal      → 要「修改」外層變數時才需要，只「讀取」不用
+diff --git a/weeks/week-13/solutions/1114405055/U02-classmethod-factory.py b/weeks/week-13/solutions/1114405055/U02-classmethod-factory.py
+new file mode 100644
+index 0000000..8083fc2
+--- /dev/null
++++ b/weeks/week-13/solutions/1114405055/U02-classmethod-factory.py
+@@ -0,0 +1,112 @@
++# U02. @classmethod：多重構造器（工廠方法）
++# 讓 class 可以用「不同格式的資料」建立物件，不只是靠 __init__
++# 對應 Bloom's Taxonomy：理解（Understand）— 能解釋 cls 的作用與繼承行為
++
++# ── 問題：__init__ 只能有一種寫法 ────────────────────────
++# 座標點可能來自不同地方：
++#   - 直接給 (x, y)
++#   - 從字串 "3,4" 解析
++#   - 從 list [3, 4] 讀取
++# 三種都用 __init__ 處理，會讓 __init__ 變得很複雜
++
++# ── @classmethod 解法：每種格式一個工廠方法 ─────────────
++class Point:
++    def __init__(self, x, y):
++        self.x = x
++        self.y = y
++
++    def __repr__(self):
++        return f"Point({self.x}, {self.y})"
++
++    @classmethod
++    def from_string(cls, s):
++        """從 '3,4' 這種字串建立 Point"""
++        # cls 就是「目前的 class 本身」，等於 Point
++        x, y = map(int, s.split(','))
++        return cls(x, y)
++
++    @classmethod
++    def from_list(cls, lst):
++        """從 [3, 4] 這種 list 建立 Point"""
++        return cls(lst[0], lst[1])
++
++    @classmethod
++    def origin(cls):
++        """原點的工廠方法"""
++        return cls(0, 0)
++
++print("=== @classmethod 多重構造器 ===")
++p1 = Point(3, 4)                   # 一般方式
++p2 = Point.from_string("3,4")     # 從字串
++p3 = Point.from_list([3, 4])      # 從 list
++p4 = Point.origin()               # 工廠方法
++print(p1, p2, p3, p4)
++
++# ── cls 在繼承時很重要 ────────────────────────────────────
++# from_string 繼承自 Point，但 cls 會指向「實際呼叫的 class」
++
++class ColoredPoint(Point):
++    def __init__(self, x, y, color="black"):
++        super().__init__(x, y)
++        self.color = color
++
++    def __repr__(self):
++        return f"ColoredPoint({self.x}, {self.y}, color={self.color!r})"
++
++print("\n=== 繼承時 cls 指向子類 ===")
++cp = ColoredPoint.from_string("5,6")
++print(cp)            # ColoredPoint(5, 6, color='black')
++print(type(cp))      # <class '__main__.ColoredPoint'>，不是 Point！
++
++# 補充說明：
++# - classmethod 與 staticmethod 的差別：classmethod 的第一個參數會收到 cls，
++#   可用來建立或回傳該類的實例；staticmethod 則沒有自動傳入任何類別或實例參考。
++# - 使用 cls(...) 而不是直接調用 Point(...) 可以確保當子類繼承時，工廠方法
++#   會建立呼叫者（子類）的實例，這對於實作可擴充的工廠方法非常重要。
++
++# ── CPE 應用：UVA 11005 進位制物件 ──────────────────────
++# 題目的輸入是一串成本值，可以用 classmethod 從字串建立
++
++class CostTable:
++    """儲存 36 個字元（0-9, A-Z）各自的印刷成本"""
++
++    CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
++
++    def __init__(self, costs):
++        self.costs = costs   # list，長度 36
++
++    def cost_of(self, digit_index):
++        return self.costs[digit_index]
++
++    def total_cost(self, n, base):
++        """計算數字 n 在 base 進位下的總印刷成本"""
++        if n == 0:
++            return self.costs[0]
++        total = 0
++        while n > 0:
++            total += self.costs[n % base]
++            n //= base
++        return total
++
++    @classmethod
++    def uniform(cls, cost=1):
++        """建立所有字元成本相同的表（方便測試）"""
++        return cls([cost] * 36)
++
++    @classmethod
++    def from_flat_string(cls, s):
++        """從一行 36 個整數（空白分隔）建立成本表"""
++        values = list(map(int, s.split()))
++        return cls(values)
++
++print("\n=== CPE：進位制成本計算 ===")
++table = CostTable.uniform(1)   # 每個字元成本都是 1
++n = 255
++for base in range(2, 11):
++    c = table.total_cost(n, base)
++    print(f"  255 在 {base:2d} 進位：位數 {c}")
++
++# 記憶重點 ──────────────────────────────────────────────────
++# @classmethod 的第一個參數是 cls（class 本身），不是 self（物件）
++# cls(...)  等於  ClassName(...)，但繼承時會自動用子類
++# 常用於：替代構造器、工廠方法、從不同格式解析資料
+-- 
+2.53.0
+
